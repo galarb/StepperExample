@@ -8,16 +8,18 @@
  By: Gal Arbel
  2023
 */
+
 #include <LiquidCrystal_I2C.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // on 0x27 i2c address, 16 by 2
 
 class Stepexample {
 
-private:
+  private:
   int speed = 1200;  // this is the delay in uSec between the stepper pulses
   byte stepPin = 0;
   byte dirPin = 0;
   byte xlimPin = 0;
+  int xlocation = 0;
 
   void movefromedge(char direction){
     if (direction == 'l'){
@@ -33,16 +35,16 @@ private:
    }
 
   }
-  int xlocation = 0;
 
-public:
-  Stepexample(int stepPin, int dirPin, int xlimPin) {
-    this->stepPin = stepPin;
-    this->dirPin = dirPin;
-    this->xlimPin = xlimPin;
-    pinMode(stepPin, OUTPUT);
-    pinMode(dirPin, OUTPUT);
-    pinMode(xlimPin, INPUT_PULLUP);
+  public:
+    Stepexample(int stepPin, int dirPin, int xlimPin, int speed) {
+      this->stepPin = stepPin;
+      this->dirPin = dirPin;
+      this->xlimPin = xlimPin;
+      this->speed = speed;
+      pinMode(stepPin, OUTPUT);
+      pinMode(dirPin, OUTPUT);
+      pinMode(xlimPin, INPUT_PULLUP);
   }
   void begin(double bdrate) {
     Serial.begin(bdrate);
@@ -57,15 +59,16 @@ public:
   void move(int x) {  //move horizontally, measured in steps
     Serial.println("dx activated");
     Serial.print("Delta X =");
-    Serial.println(x);
+    Serial.print(x);
+    Serial.println(" steps");
 
     if (x > 0) {
       digitalWrite(dirPin, HIGH);  // go CW. Makes 200 pulses for making one full cycle rotation
-      for (int c = 0; c < x; c++) {
-        digitalWrite(stepPin, HIGH);
-        delayMicroseconds(speed);
-        digitalWrite(stepPin, LOW);
-        delayMicroseconds(speed);
+      for (int c = 0; c < x; c++) { // a loop to produce pulses for the motor
+        digitalWrite(stepPin, HIGH); // that's a HIGH pulse
+        delayMicroseconds(speed);   // and its duration
+        digitalWrite(stepPin, LOW); // that's a LOW pulse
+        delayMicroseconds(speed);   // and its duration
         xlocation++;
         if (!digitalRead(xlimPin)) {
           Serial.println("limit X reached");
@@ -110,7 +113,7 @@ public:
 };
 //Stepexample mystepper = Stepexample(3, 4,5);
 
-Stepexample mystepper(3, 2, 5);
+Stepexample mystepper(3, 2, 5, 1000);//stepPin, dirPin, xlimPin, speed (usec delay between pulses)
 
 void setup() {
   mystepper.begin(115200);
